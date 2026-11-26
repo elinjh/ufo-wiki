@@ -50,12 +50,23 @@ button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visi
 .w-login h2{margin:0;font-size:20px}
 .w-login p{margin:0;color:var(--wmut);max-width:52ch}
 .w-login .w-go{padding:11px 26px;font-size:15px}
-.w-body{display:grid;grid-template-columns:210px minmax(0,1fr) 330px;gap:18px;align-items:start}
+.w-body{display:grid;grid-template-columns:210px minmax(0,1fr);gap:18px;align-items:start}
 .w-side{min-width:0}
 .w-sinner{display:grid;gap:10px}
 .w-shead{display:flex;justify-content:space-between;align-items:center;gap:6px}
 .w-shead b{font-size:15px}
 .w-only-narrow{display:none}
+.w-srail{display:none}
+.w-body.fold{grid-template-columns:42px minmax(0,1fr)}
+.w-detail{display:none}
+.w-body.sel .w-detail{display:block}
+.w-body.sel{grid-template-columns:210px minmax(300px,1fr) minmax(0,1.5fr)}
+.w-body.fold.sel{grid-template-columns:42px minmax(300px,1fr) minmax(0,1.6fr)}
+.w-body.fold .w-sinner{display:none}
+.w-body.fold .w-srail{display:flex;flex-direction:column;align-items:center;gap:10px;width:42px;min-height:220px;padding:12px 0;border:1px solid var(--wline);background:var(--wcard);color:var(--wink);border-radius:12px;cursor:pointer;font:inherit;font-size:13px}
+.w-body.fold .w-srail:hover{background:var(--wsoft)}
+.w-srail-t{writing-mode:vertical-rl;letter-spacing:2px;font-weight:700}
+.w-body.fold .w-srail.on::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--wbar)}
 .w-seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
 .w-seg button{border:1px solid var(--wline);background:var(--wcard);border-radius:8px;padding:5px 2px;font-size:12.5px;cursor:pointer;color:var(--wink)}
 .w-seg button[aria-pressed="true"]{background:var(--wsoft);border-color:var(--wbar);font-weight:700}
@@ -166,7 +177,13 @@ button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visi
 .w-atbl th{font-size:12px;color:var(--wmut);background:var(--wb);font-weight:600}
 .w-atbl tr:last-child td{border-bottom:0}
 @container wiki (max-width:1100px){
-  .w-body{grid-template-columns:200px minmax(0,1fr)}
+  .w-body{grid-template-columns:180px minmax(0,1fr);gap:14px}
+  .w-body.sel{grid-template-columns:180px minmax(260px,1fr) minmax(0,1.3fr)}
+  .w-body.fold.sel{grid-template-columns:42px minmax(260px,1fr) minmax(0,1.5fr)}
+}
+@container wiki (max-width:820px){
+  .w-body,.w-body.sel{grid-template-columns:200px minmax(0,1fr)}
+  .w-body.fold,.w-body.fold.sel{grid-template-columns:42px minmax(0,1fr)}
   .w-detail{position:fixed;top:0;right:0;bottom:0;width:min(400px,94vw);z-index:30;background:var(--wb);box-shadow:-10px 0 28px var(--wshadow);padding:12px;overflow:auto}
   .w-detail:not(.open){display:none}
   .w-dinner{position:static;max-height:none}
@@ -177,6 +194,9 @@ button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visi
   .w-side{display:none}
   .w-side.open{display:block;position:fixed;top:0;left:0;bottom:0;width:min(310px,90vw);z-index:31;background:var(--wb);box-shadow:10px 0 28px var(--wshadow);padding:14px;overflow:auto}
   .w-only-narrow{display:inline-block}
+  .w-only-wide,.w-body.fold .w-srail{display:none}
+  .w-body.fold,.w-body.sel,.w-body.fold.sel{grid-template-columns:minmax(0,1fr)}
+  .w-body.fold .w-sinner{display:grid}
   .w-hero{grid-template-columns:1fr;padding:18px}
   .w-hero h1{font-size:21px}
   .w-recent{transform:none;box-shadow:none;border:1px solid var(--wline)}

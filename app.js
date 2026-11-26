@@ -140,6 +140,8 @@ function ingest(tabs,catValues,meta,adminValues){
 }
 
 /* ───────── 거르기 ───────── */
+var FOLD=false;try{FOLD=localStorage.getItem('ufoWikiFold')==='1';}catch(e){}
+function setFold(v){FOLD=v;try{localStorage.setItem('ufoWikiFold',v?'1':'0');}catch(e){}render();}
 var S={q:'',scope:'all',view:'find',dim:'관심사',cfind:'',cat:null,preset:'all',from:'',to:'',year:THISYEAR,tab:'',meet:'',issue:'',sort:'new',sel:null,selRow:null,open:false,side:false,group:true,limit:80};
 function inCat(r,c){if(!c)return true;if(c.top==='미기재')return r.tokens.length===0;return r.tokens.some(function(t){return t.top===c.top&&(!c.sub||t.code===c.sub);});}
 function inQ(r){
@@ -215,7 +217,7 @@ function renderSide(){
       });
     }
   });
-  $('w-tree').innerHTML=h;$('w-side').classList.toggle('open',S.side);
+  $('w-tree').innerHTML=h;$('w-side').classList.toggle('open',S.side);$('w-bodywrap').classList.toggle('fold',FOLD);$('w-sunfold').classList.toggle('on',!!S.cat);$('w-sunfold').setAttribute('aria-expanded',String(!FOLD));$('w-sfold').setAttribute('aria-expanded',String(!FOLD));
 }
 function renderPeriod(){
   Array.prototype.forEach.call(document.querySelectorAll('#w-period .w-chip'),function(b){b.setAttribute('aria-pressed',b.dataset.p===S.preset);});
@@ -304,9 +306,10 @@ function entHtml(r,i,selOpen){
   var first='<span class="c">'+hl((r.concl.trim()||r.q.trim()).slice(0,i===0?400:90)+((r.concl.trim()||r.q.trim()).length>(i===0?400:90)?' …':''))+'</span>';
   return {head:head,first:first,body:body};
 }
+function closeDetail(){S.open=false;S.sel=null;S.selRow=null;try{history.replaceState(null,'',location.pathname+location.search);}catch(x){}render();}
 function renderDetail(){
   var det=$('w-detail'),box=$('w-dinner');var all=S.sel&&DB.groups[S.sel];
-  det.classList.toggle('open',!!(all&&S.open));
+  det.classList.toggle('open',!!(all&&S.open));$('w-bodywrap').classList.toggle('sel',!!(all&&S.open));
   if(!all){
     box.innerHTML='<div class="w-help"><b>이렇게 찾아보세요</b><p>키워드는 띄어쓰기로 나눠 입력할 수 있어요. 입력한 단어가 모두 담긴 기록을 찾아요.</p><p>초성(ㅁㅋ)으로도 찾을 수 있어요.</p><p>기간 버튼이나 월별 막대를 누르면 그 기간만 보여요. 분류·회의와 함께 걸 수 있어요.</p></div><div class="w-help"><b>카드를 누르면</b><p>이 자리에 현재 결론과, 같은 데이터를 논의한 이전 기록이 히스토리로 나와요.</p></div>';
     box.style.cssText='position:static;max-height:none;background:none;border:0;padding:0;overflow:visible';return;
@@ -322,7 +325,7 @@ function renderDetail(){
     var pv=r.prev.trim()?'<li class="prv"><div class="w-ent"><details><summary><span class="h"><b>이전 판</b> · '+dateTxt(r)+' 같은 행을 고치기 전</span><span class="c">'+hl(r.prev.replace(/^\[[^\]]*\]\s*/,'').slice(0,90))+(r.prev.length>90?' …':'')+'</span></summary><div class="more"><div class="c">'+hl(r.prev,true)+'</div></div></details></div></li>':'';
     return main+pv;}).join('')+'</ol>';
   var sheetUrl='https://docs.google.com/spreadsheets/d/'+CFG.sheetId+'/edit#gid='+cur.sheetId+'&range=A'+cur.row;
-  box.innerHTML='<div class="w-dhead"><div><div class="w-meta">'+esc(cur.meeting||'회의 미기재')+' · '+dateTxt(cur)+(cur.worker?' · '+esc(cur.worker):'')+'</div><h3>'+hl(cur.name)+'</h3></div><button type="button" class="w-btn w-only-narrow" id="w-dclose">닫기</button></div>'+
+  box.innerHTML='<div class="w-dhead"><div><div class="w-meta">'+esc(cur.meeting||'회의 미기재')+' · '+dateTxt(cur)+(cur.worker?' · '+esc(cur.worker):'')+'</div><h3>'+hl(cur.name)+'</h3></div><button type="button" class="w-btn" id="w-dclose" title="상세 닫기 (Esc)">닫기 ✕</button></div>'+
     '<div class="w-dact">'+(cur.adminUrl?'<a class="w-btn" href="'+esc(cur.adminUrl)+'" target="_blank" rel="noopener noreferrer" style="text-decoration:none">어드민 열기 ↗</a>':'')+'<button type="button" class="w-btn" data-act="copy">링크 복사</button>'+(cur.sheetId!=null?'<a class="w-btn" href="'+esc(sheetUrl)+'" target="_blank" rel="noopener noreferrer" style="text-decoration:none">시트 '+cur.row+'행 ↗</a>':'')+'</div>'+
     (cur.issue?'<div class="w-dsec"><span>이슈</span><p>'+esc(cur.issue)+'</p></div>':'')+
     (cur.q.trim()?'<div class="w-dsec"><span>질문</span><p>'+hl(cur.q,true)+'</p></div>':'')+
@@ -556,7 +559,7 @@ $('w-main').addEventListener('click',function(e){
   var d=e.target.closest('.w-dict button');if(d){S.dim=d.dataset.dim;S.cat={dim:d.dataset.dim,top:d.dataset.top};S.view='find';S.limit=80;render();}
 });
 $('w-detail').addEventListener('click',function(e){
-  if(e.target.id==='w-dclose'){S.open=false;render();return;}
+  if(e.target.id==='w-dclose'){closeDetail();return;}
   var a=e.target.closest('[data-act="copy"]');
   if(a){var url=location.origin+location.pathname+'#d='+encodeURIComponent(S.sel),old=a.textContent;
     var done=function(t){a.textContent=t;setTimeout(function(){a.textContent=old;},1500);};
@@ -564,6 +567,8 @@ $('w-detail').addEventListener('click',function(e){
 });
 $('w-sopen').addEventListener('click',function(){S.side=true;S.open=false;render();});
 $('w-sclose').addEventListener('click',function(){S.side=false;render();});
+$('w-sfold').addEventListener('click',function(){setFold(true);$('w-sunfold').focus();});
+$('w-sunfold').addEventListener('click',function(){setFold(false);$('w-sfold').focus();});
 $('w-refresh').addEventListener('click',function(){sync({});});
 $('w-all').addEventListener('click',function(){sync({force:true});});
 $('w-logout').addEventListener('click',logout);
@@ -573,7 +578,7 @@ $('w-admin-close').addEventListener('click',function(){$('w-admin').hidden=true;
 $('w-keep').addEventListener('change',function(e){try{localStorage.setItem(CFG.keepKey,e.target.checked?'1':'0');}catch(x){}if(!e.target.checked)kvClear();});
 window.addEventListener('hashchange',function(){hashSel();render();});
 document.addEventListener('keydown',function(e){
-  if(e.key==='Escape'&&(S.open||S.side)){S.open=false;S.side=false;render();}
+  if(e.key==='Escape'&&(S.open||S.side)){if(S.open)closeDetail();else{S.side=false;render();}}
   if(e.key==='/'&&!/INPUT|SELECT|TEXTAREA/.test((document.activeElement||{}).tagName||'')){e.preventDefault();$('w-q').focus();}
 });
 
