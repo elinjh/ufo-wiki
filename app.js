@@ -55,12 +55,12 @@ function kvSet(k,v){return idb().then(function(db){return new Promise(function(r
 function kvClear(){return idb().then(function(db){return new Promise(function(res){var t=db.transaction('kv','readwrite');t.objectStore('kv').clear();t.oncomplete=function(){res();};t.onerror=function(){res();};});}).catch(function(){});}
 
 /* ───────── 시트 값 → 기록으로 바꾸기 ───────── */
-function tokensOf(s){
+function tokensOf(s,col){
   var out=[],seen={};
   String(s||'').split(/[\n,+;]+/).forEach(function(p){
     p=p.trim();var m=/^([IPN]\d{2}\d*)(?:-.*)?$/.exec(p);if(!m||seen[p])return;seen[p]=1;
     var parts=p.split('-'),code=m[1];
-    out.push({raw:p,code:code,top:code.slice(0,3),dim:code[0]==='I'?'관심사':code[0]==='P'?'업종':'기타',name:parts[1]||'',label:parts.slice(1).join(' › ')||code});
+    out.push({raw:p,col:col||(code[0]==='I'?'관심사':'업종'),code:code,top:code.slice(0,3),dim:code[0]==='I'?'관심사':code[0]==='P'?'업종':'기타',name:parts[1]||'',label:parts.slice(1).join(' › ')||code});
   });
   return out;
 }
@@ -90,7 +90,7 @@ function parseTab(t){
       meeting:g('meeting').trim(),worker:g('worker').trim(),date:parseDate(g('date'),year),
       adminUrl:um?um[0].replace(/[.,;]+$/,''):'',name:name||'(이름 없음)',issue:g('issue').trim(),q:q,concl:concl,
       cat1:g('cat1'),cat2:g('cat2'),inq:g('inq').trim(),kakao:g('kakao'),src:g('src'),check:g('check'),prev:g('prev')};
-    o.tokens=tokensOf(o.cat1).concat(tokensOf(o.cat2));
+    o.tokens=tokensOf(o.cat1,'관심사').concat(tokensOf(o.cat2,'업종'));
     o.gkey=adminKey(adminRaw)||('n:'+norm(name));
     o.hayName=norm(o.name);
     o.hay=norm([o.name,o.meeting,o.worker,o.issue,o.q,o.concl,o.cat1,o.cat2,o.inq,o.kakao,o.prev,o.tab,o.adminUrl].join(' '));
@@ -172,12 +172,12 @@ function periodLabel(){
   if(/^m-/.test(S.preset))return S.preset.slice(2,6)+'년 '+(+S.preset.slice(7))+'월';
   return (S.from||'처음')+' ~ '+(S.to||'끝');
 }
-function catLabel(t){return t.label;}
+function catLabel(t){return t.col+'> '+t.raw;}
 function topName(top){return top==='미기재'?'분류 미기재':(DB.topName[top]||top);}
 function diffOf(n,o){
   var c=[],f=function(a,b,l){var A=a.tokens.map(function(t){return t.raw;}).join(' / '),B=b.tokens.map(function(t){return t.raw;}).join(' / ');return A!==B?l:null;};
-  var a1=n.tokens.filter(function(t){return t.dim==='관심사';}).map(function(t){return t.label;}).join(', ')||'미기재',b1=o.tokens.filter(function(t){return t.dim==='관심사';}).map(function(t){return t.label;}).join(', ')||'미기재';
-  var a2=n.tokens.filter(function(t){return t.dim!=='관심사';}).map(function(t){return t.label;}).join(', ')||'미기재',b2=o.tokens.filter(function(t){return t.dim!=='관심사';}).map(function(t){return t.label;}).join(', ')||'미기재';
+  var g=function(x,k){return x.tokens.filter(function(t){return (t.col==='관심사')===k;}).map(function(t){return t.raw;}).join(', ')||'미태깅';};
+  var a1=g(n,true),b1=g(o,true),a2=g(n,false),b2=g(o,false);
   if(a1!==b1)c.push('관심사: '+b1+' → '+a1);if(a2!==b2)c.push('업종: '+b2+' → '+a2);return c;
 }
 function changed(rs){for(var i=1;i<rs.length;i++){if(diffOf(rs[i-1],rs[i]).length)return true;}return false;}
@@ -243,9 +243,9 @@ function tagsHtml(r){
   var h='';
   if(r.check.trim())h+='<span class="w-tag chk">확인 필요</span>';
   if(r.issue)h+='<span class="w-tag ex">'+esc(r.issue)+'</span>';
-  var k=r.tokens.filter(function(t){return t.dim==='관심사';}),u=r.tokens.filter(function(t){return t.dim!=='관심사';});
-  h+=k.length?k.slice(0,3).map(function(t){return '<span class="w-tag">'+esc(catLabel(t))+'</span>';}).join(''):'<span class="w-tag none">관심사 미기재</span>';
-  h+=u.length?u.slice(0,3).map(function(t){return '<span class="w-tag">'+esc(catLabel(t))+'</span>';}).join(''):'<span class="w-tag none">업종 미기재</span>';
+  var k=r.tokens.filter(function(t){return t.col==='관심사';}),u=r.tokens.filter(function(t){return t.col!=='관심사';});
+  h+=k.length?k.slice(0,3).map(function(t){return '<span class="w-tag">'+esc(catLabel(t))+'</span>';}).join(''):'<span class="w-tag none">관심사> 미태깅</span>';
+  h+=u.length?u.slice(0,3).map(function(t){return '<span class="w-tag">'+esc(catLabel(t))+'</span>';}).join(''):'<span class="w-tag none">업종> 미태깅</span>';
   return h;
 }
 function badges(r){
